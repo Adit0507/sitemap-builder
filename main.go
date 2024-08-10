@@ -2,23 +2,47 @@ package main
 
 import (
 	// "encoding/base32"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sitemap/link"
 	"strings"
 )
 
+const xmlns = "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+type loc struct {
+	Value string `xml:"loc"`
+}
+
+type urlset struct {
+	Urls  []loc  `xml:"url"`
+	Xmlns string `xml:"xmlns,attr"`
+}
+
 func main() {
-	urlFlag := flag.String("url", "https://letterboxd.com", "the url I want to build a sitemap for")
-	maxDepth := flag.Int("depth", 10, "the maximum no. of links deep to traverse")
+	urlFlag := flag.String("url", "https://adityakumarsingh.hashnode.dev", "the url I want to build a sitemap for")
+	maxDepth := flag.Int("depth", 15, "the maximum no. of links deep to traverse")
 	flag.Parse()
 
 	pages := bfs(*urlFlag, *maxDepth)
+	toXml := urlset{
+		Xmlns: xmlns,
+	}
+
 	for _, page := range pages {
-		fmt.Println(page)
+		toXml.Urls = append(toXml.Urls, loc{page})
+	}
+
+	fmt.Print(xml.Header)
+	enc := xml.NewEncoder(os.Stdout)
+	enc.Indent("", " ")
+	if err := enc.Encode(toXml); err != nil {
+		panic(err)
 	}
 }
 
